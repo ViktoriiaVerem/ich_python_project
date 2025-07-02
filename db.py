@@ -366,6 +366,31 @@ def find_film_by_key(key: str):
         logger.error(f"Ошибка поиска фильма по ключу '{key}': {e}")
         return None
 
+def find_films_by_first_letter(letter, limit=20, skip=0):
+    """
+    Найти фильмы, название которых начинается с заданной буквы.
+    """
+    try:
+        connection = initialize_mysql()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        sql = (
+            """
+            SELECT title, description
+            FROM film_text
+            WHERE title LIKE %s
+            LIMIT %s OFFSET %s
+            """
+        )
+        search_pattern = f"{letter.upper()}%"
+        cursor.execute(sql, (search_pattern, limit, skip))
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+    except Exception as e:
+        print(f"Ошибка поиска фильмов по первой букве: {e}")
+        logger.error(f"Ошибка поиска фильмов по первой букве: {e}")
+        return []
+
 # Синоним для обратной совместимости
 close_db_connection = close_all_connections
 
