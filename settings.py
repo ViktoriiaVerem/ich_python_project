@@ -10,11 +10,9 @@ class Settings:
     Класс настроек приложения, загружает параметры из переменных окружения.
     """
     # Настройки MongoDB (для логов и статистики)
-    MONGO_HOST = os.getenv('MONGO_HOST', 'localhost')
-    MONGO_PORT = os.getenv('MONGO_PORT', '27017')
-    MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'film_logs')
-    MONGO_USERNAME = os.getenv('MONGO_USERNAME', '')
-    MONGO_PASSWORD = os.getenv('MONGO_PASSWORD', '')
+    MONGO_URI = os.getenv('MONGO_URI')
+    MONGO_DB_NAME = os.getenv('MONGO_DB_NAME')
+    MONGO_COLLECTION_NAME = os.getenv('MONGO_COLLECTION_NAME')
 
     # Настройки MySQL (для фильмов)
     MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
@@ -30,11 +28,9 @@ class Settings:
     @classmethod
     def get_mongo_connection_string(cls):
         """
-        Сформировать строку подключения к MongoDB на основе настроек.
+        Вернуть строку подключения к MongoDB из переменной окружения.
         """
-        if cls.MONGO_USERNAME and cls.MONGO_PASSWORD:
-            return f'mongodb://{cls.MONGO_USERNAME}:{cls.MONGO_PASSWORD}@{cls.MONGO_HOST}:{cls.MONGO_PORT}/'
-        return f'mongodb://{cls.MONGO_HOST}:{cls.MONGO_PORT}/'
+        return cls.MONGO_URI
 
     @classmethod
     def get_mysql_config(cls):

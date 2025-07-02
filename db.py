@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from settings import settings
 from datetime import datetime
 import json
+from logger import logger
 
 # Глобальные переменные для кэширования соединений
 _mongo_client = None
@@ -15,7 +16,6 @@ def initialize_mongo():
     Инициализация соединения с MongoDB для логов и статистики с кэшированием.
     """
     global _mongo_client, _mongo_db
-    # Если соединение уже есть и живое — возвращаем его
     if _mongo_client is not None and _mongo_db is not None:
         try:
             _mongo_client.admin.command('ping')
@@ -74,7 +74,7 @@ def log_search_query(query, search_type, results_count):
     """
     try:
         mongo_db = initialize_mongo()
-        logs_collection = mongo_db['search_queries']
+        collection = mongo_db[settings.MONGO_COLLECTION_NAME]
         
         log_entry = {
             'query': query,
@@ -83,10 +83,11 @@ def log_search_query(query, search_type, results_count):
             'results_count': results_count
         }
         
-        logs_collection.insert_one(log_entry)
+        collection.insert_one(log_entry)
         
     except Exception as e:
         print(f"Ошибка при логировании запроса: {e}")
+        logger.error(f"Ошибка при логировании запроса: {e}")
 
 def get_popular_queries(limit=5):
     """
@@ -100,7 +101,7 @@ def get_popular_queries(limit=5):
     """
     try:
         mongo_db = initialize_mongo()
-        logs_collection = mongo_db['search_queries']
+        collection = mongo_db[settings.MONGO_COLLECTION_NAME]
         
         # Конвейер агрегации для подсчета запросов по тексту
         pipeline = [
@@ -120,11 +121,12 @@ def get_popular_queries(limit=5):
             }
         ]
         
-        results = list(logs_collection.aggregate(pipeline))
+        results = list(collection.aggregate(pipeline))
         return results
         
     except Exception as e:
         print(f"Ошибка при получении популярных запросов: {e}")
+        logger.error(f"Ошибка при получении популярных запросов: {e}")
         return []
 
 def get_recent_queries(limit=5):
@@ -139,15 +141,16 @@ def get_recent_queries(limit=5):
     """
     try:
         mongo_db = initialize_mongo()
-        logs_collection = mongo_db['search_queries']
+        collection = mongo_db[settings.MONGO_COLLECTION_NAME]
         
-        results = list(logs_collection.find()
+        results = list(collection.find()
                       .sort('timestamp', -1)
                       .limit(limit))
         return results
         
     except Exception as e:
         print(f"Ошибка при получении последних запросов: {e}")
+        logger.error(f"Ошибка при получении последних запросов: {e}")
         return []
 
 # =====================================================
@@ -192,6 +195,7 @@ def find_films_by_keyword(keyword, limit=10, skip=0):
         
     except Exception as e:
         print(f"Ошибка поиска фильмов по ключевому слову '{keyword}': {e}")
+        logger.error(f"Ошибка поиска фильмов по ключевому слову '{keyword}': {e}")
         return []
 
 def find_films_by_criteria(genre=None, year_from=None, year_to=None, limit=10, skip=0):
@@ -267,6 +271,7 @@ def find_films_by_criteria(genre=None, year_from=None, year_to=None, limit=10, s
         
     except Exception as e:
         print(f"Ошибка поиска фильмов по критериям: {e}")
+        logger.error(f"Ошибка поиска фильмов по критериям: {e}")
         return []
 
 def get_all_genres():
@@ -296,6 +301,7 @@ def get_all_genres():
         
     except Exception as e:
         print(f"Ошибка получения жанров: {e}")
+        logger.error(f"Ошибка получения жанров: {e}")
         return []
 
 def get_year_range():
@@ -329,6 +335,7 @@ def get_year_range():
             
     except Exception as e:
         print(f"Ошибка получения диапазона лет: {e}")
+        logger.error(f"Ошибка получения диапазона лет: {e}")
         return {'min_year': None, 'max_year': None}
 
 def find_film_by_key(key: str):
@@ -356,6 +363,7 @@ def find_film_by_key(key: str):
         
     except Exception as e:
         print(f"Ошибка поиска фильма по ключу '{key}': {e}")
+        logger.error(f"Ошибка поиска фильма по ключу '{key}': {e}")
         return None
 
 # Синоним для обратной совместимости

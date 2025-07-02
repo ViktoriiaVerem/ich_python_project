@@ -1,4 +1,5 @@
 # Модуль пользовательского интерфейса (UI)
+from prettytable import PrettyTable
 
 menu = {
     "1": "Поиск по ключевому слову",
@@ -76,19 +77,40 @@ def display_film(film):
 
 
 def display_films(films):
-    """Вывести список фильмов."""
+    """
+    Вывести список фильмов в виде таблицы.
+    """
     if not films:
         print("\nФильмы не найдены.")
         return
     print(f"\nНайдено {len(films)} фильм(ов):")
+    table = PrettyTable()
+    # Определяем заголовки по ключам первого фильма
+    headers = []
+    if films:
+        sample = films[0]
+        # Для совместимости с разными структурами
+        if 'title' in sample and 'description' in sample:
+            headers = ['№', 'Название', 'Описание']
+        elif 'title' in sample and 'release_year' in sample and 'genre' in sample:
+            headers = ['№', 'Название', 'Год', 'Жанр']
+        else:
+            headers = ['№'] + list(sample.keys())
+    table.field_names = headers
     for i, film in enumerate(films, 1):
-        print(f"\n{i}. {film.get('title', 'Не указано')} ({film.get('year', 'Не указан')})")
-        print(f"   Жанр: {film.get('genre', 'Не указан')}")
-        print(f"   Рейтинг: {film.get('rating', 'Не указан')}")
+        if 'title' in film and 'description' in film:
+            table.add_row([i, film.get('title', 'Не указано'), film.get('description', 'Не указано')])
+        elif 'title' in film and 'release_year' in film and 'genre' in film:
+            table.add_row([i, film.get('title', 'Не указано'), film.get('release_year', 'Не указан'), film.get('genre', 'Не указан')])
+        else:
+            table.add_row([i] + [film.get(k, 'Не указано') for k in film.keys()])
+    print(table)
 
 
 def display_popular_queries():
-    """Вывести популярные и последние поисковые запросы из MongoDB."""
+    """
+    Вывести популярные и последние поисковые запросы из MongoDB в виде таблицы.
+    """
     from db import get_popular_queries, get_recent_queries
     print("\n" + "=" * 60)
     print("СТАТИСТИКА ПОИСКОВЫХ ЗАПРОСОВ")
@@ -97,18 +119,38 @@ def display_popular_queries():
     print("\nТоп-5 популярных запросов:")
     popular = get_popular_queries(5)
     if popular:
+        table = PrettyTable()
+        table.field_names = ["№", "Запрос", "Тип", "Кол-во", "Последний поиск"]
         for i, query in enumerate(popular, 1):
-            print(f"{i}. '{query['_id']}' - {query['count']} раз(а)")
-            print(f"   Тип: {query['search_type']}, Последний поиск: {query['last_searched'].strftime('%Y-%m-%d %H:%M')}")
+            last = query.get('last_searched')
+            last_str = last.strftime('%Y-%m-%d %H:%M') if last else '-'
+            table.add_row([
+                i,
+                query.get('_id', '-'),
+                query.get('search_type', '-'),
+                query.get('count', 0),
+                last_str
+            ])
+        print(table)
     else:
         print("   Нет данных о популярных запросах")
     # Последние запросы
     print("\nПоследние 5 запросов:")
     recent = get_recent_queries(5)
     if recent:
+        table = PrettyTable()
+        table.field_names = ["№", "Запрос", "Тип", "Результатов", "Время"]
         for i, query in enumerate(recent, 1):
-            print(f"{i}. '{query['query']}' - {query['timestamp'].strftime('%Y-%m-%d %H:%M')}")
-            print(f"   Тип: {query['search_type']}, Результатов: {query['results_count']}")
+            ts = query.get('timestamp')
+            ts_str = ts.strftime('%Y-%m-%d %H:%M') if ts else '-'
+            table.add_row([
+                i,
+                query.get('query', '-'),
+                query.get('search_type', '-'),
+                query.get('results_count', 0),
+                ts_str
+            ])
+        print(table)
     else:
         print("   Нет данных о последних запросах")
     print("=" * 60)
