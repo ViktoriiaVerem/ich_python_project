@@ -11,9 +11,10 @@ _mongo_db = None
 _mysql_connection = None
 
 
-def initialize_mongo():
+def initialize_mongo() -> object:
     """
     Инициализация соединения с MongoDB для логов и статистики с кэшированием.
+    :return: объект базы данных MongoDB
     """
     global _mongo_client, _mongo_db
     if _mongo_client is not None and _mongo_db is not None:
@@ -30,9 +31,10 @@ def initialize_mongo():
     return _mongo_db
 
 
-def initialize_mysql():
+def initialize_mysql() -> object:
     """
     Инициализация соединения с MySQL для фильмов с кэшированием.
+    :return: объект соединения MySQL
     """
     global _mysql_connection
     if _mysql_connection is not None:
@@ -46,9 +48,10 @@ def initialize_mysql():
     return _mysql_connection
 
 
-def close_all_connections():
+def close_all_connections() -> None:
     """
     Закрыть все соединения с базами данных и очистить кэш.
+    :return: None
     """
     global _mongo_client, _mongo_db, _mysql_connection
     if _mongo_client:
@@ -63,47 +66,37 @@ def close_all_connections():
 # ФУНКЦИИ ДЛЯ MONGODB (Логи и статистика)
 # =====================================================
 
-def log_search_query(query, search_type, results_count):
+def log_search_query(query: str, search_type: str, results_count: int) -> None:
     """
     Логировать поисковый запрос в MongoDB для сбора статистики.
-    
-    Args:
-        query (str): Поисковый текст запроса
-        search_type (str): Тип поиска (ключевое слово, жанр_год)
-        results_count (int): Количество найденных результатов
+    :param query: Поисковый текст запроса
+    :param search_type: Тип поиска (ключевое слово, жанр_год)
+    :param results_count: Количество найденных результатов
+    :return: None
     """
     try:
         mongo_db = initialize_mongo()
         collection = mongo_db[settings.MONGO_COLLECTION_NAME]
-        
         log_entry = {
             'query': query,
             'search_type': search_type,
             'timestamp': datetime.utcnow(),
             'results_count': results_count
         }
-        
         collection.insert_one(log_entry)
-        
     except Exception as e:
         print(f"Ошибка при логировании запроса: {e}")
         logger.error(f"Ошибка при логировании запроса: {e}")
 
-def get_popular_queries(limit=5):
+def get_popular_queries(limit: int = 5) -> list:
     """
     Получить самые популярные поисковые запросы из MongoDB.
-    
-    Args:
-        limit (int): Максимальное количество запросов для возврата
-    
-    Returns:
-        list: Список популярных запросов с количеством
+    :param limit: Максимальное количество запросов для возврата
+    :return: Список популярных запросов с количеством
     """
     try:
         mongo_db = initialize_mongo()
         collection = mongo_db[settings.MONGO_COLLECTION_NAME]
-        
-        # Конвейер агрегации для подсчета запросов по тексту
         pipeline = [
             {
                 '$group': {
@@ -120,34 +113,26 @@ def get_popular_queries(limit=5):
                 '$limit': limit
             }
         ]
-        
         results = list(collection.aggregate(pipeline))
         return results
-        
     except Exception as e:
         print(f"Ошибка при получении популярных запросов: {e}")
         logger.error(f"Ошибка при получении популярных запросов: {e}")
         return []
 
-def get_recent_queries(limit=5):
+def get_recent_queries(limit: int = 5) -> list:
     """
     Получить последние поисковые запросы из MongoDB.
-    
-    Args:
-        limit (int): Максимальное количество запросов для возврата
-    
-    Returns:
-        list: Список последних запросов
+    :param limit: Максимальное количество запросов для возврата
+    :return: Список последних запросов
     """
     try:
         mongo_db = initialize_mongo()
         collection = mongo_db[settings.MONGO_COLLECTION_NAME]
-        
         results = list(collection.find()
                       .sort('timestamp', -1)
                       .limit(limit))
         return results
-        
     except Exception as e:
         print(f"Ошибка при получении последних запросов: {e}")
         logger.error(f"Ошибка при получении последних запросов: {e}")
@@ -157,22 +142,17 @@ def get_recent_queries(limit=5):
 # ФУНКЦИИ ДЛЯ MYSQL (Данные о фильмах)
 # =====================================================
 
-def find_films_by_keyword(keyword, limit=10, skip=0):
+def find_films_by_keyword(keyword: str, limit: int = 10, skip: int = 0) -> list[dict]:
     """
     Найти фильмы по ключевому слову в MySQL.
-    
-    Args:
-        keyword (str): Ключевое слово для поиска
-        limit (int): Максимальное количество результатов
-        skip (int): Количество результатов для пропуска (для пагинации)
-    
-    Returns:
-        list: Список словарей с фильмами
+    :param keyword: Ключевое слово для поиска
+    :param limit: Максимальное количество результатов
+    :param skip: Количество результатов для пропуска (для пагинации)
+    :return: Список словарей с фильмами
     """
     try:
         connection = initialize_mysql()
         cursor = connection.cursor(pymysql.cursors.DictCursor)
-        
         sql = (
             """
             SELECT title, description
@@ -181,43 +161,32 @@ def find_films_by_keyword(keyword, limit=10, skip=0):
             LIMIT %s OFFSET %s
             """
         )
-        
         search_pattern = f"%{keyword}%"
         cursor.execute(sql, (search_pattern, limit, skip))
-        
         results = cursor.fetchall()
         cursor.close()
-        
         # Логируем поиск
         log_search_query(keyword, 'keyword', len(results))
-        
         return results
-        
     except Exception as e:
         print(f"Ошибка поиска фильмов по ключевому слову '{keyword}': {e}")
         logger.error(f"Ошибка поиска фильмов по ключевому слову '{keyword}': {e}")
         return []
 
-def find_films_by_criteria(genre=None, year_from=None, year_to=None, limit=10, skip=0):
+def find_films_by_criteria(genre: str = None, year_from: int = None, year_to: int = None, limit: int = 10, skip: int = 0) -> list[dict]:
     """
     Найти фильмы по жанру и/или диапазону годов в MySQL.
-    
-    Args:
-        genre (str): Жанр фильма для поиска
-        year_from (int): Минимальный год
-        year_to (int): Максимальный год
-        limit (int): Максимальное количество результатов
-        skip (int): Количество результатов для пропуска (для пагинации)
-    
-    Returns:
-        list: Список словарей с фильмами
+    :param genre: Жанр фильма для поиска
+    :param year_from: Минимальный год
+    :param year_to: Максимальный год
+    :param limit: Максимальное количество результатов
+    :param skip: Количество результатов для пропуска (для пагинации)
+    :return: Список словарей с фильмами
     """
     try:
         connection = initialize_mysql()
         cursor = connection.cursor(pymysql.cursors.DictCursor)
-        
         if genre and year_from and year_to:
-            # найти фильмы по жанру и диапазону годов
             sql = (
                 """
                 SELECT f.title, f.release_year, c.name AS genre
@@ -229,9 +198,7 @@ def find_films_by_criteria(genre=None, year_from=None, year_to=None, limit=10, s
                 """
             )
             cursor.execute(sql, (genre, year_from, year_to, limit, skip))
-            
         elif genre:
-            # найти первые 10 фильмов по жанру (например 'Comedy')
             sql = (
                 """
                 SELECT f.title, f.release_year, c.name AS genre
@@ -243,9 +210,7 @@ def find_films_by_criteria(genre=None, year_from=None, year_to=None, limit=10, s
                 """
             )
             cursor.execute(sql, (genre, limit, skip))
-            
         elif year_from and year_to:
-            # найти первые 10 фильмов по диапазону годов (например 2005-2012)
             sql = (
                 """
                 SELECT title, release_year
@@ -255,76 +220,55 @@ def find_films_by_criteria(genre=None, year_from=None, year_to=None, limit=10, s
                 """
             )
             cursor.execute(sql, (year_from, year_to, limit, skip))
-            
         else:
-            # если никаких критериев не указано, возвращаем пустой результат
             return []
-        
         results = cursor.fetchall()
         cursor.close()
-        
-        # Логируем поиск
         search_criteria = f"genre:{genre}, years:{year_from}-{year_to}"
         log_search_query(search_criteria, 'genre_year', len(results))
-        
         return results
-        
     except Exception as e:
         print(f"Ошибка поиска фильмов по критериям: {e}")
         logger.error(f"Ошибка поиска фильмов по критериям: {e}")
         return []
 
-def get_all_genres():
+def get_all_genres() -> list[str]:
     """
     Получить все уникальные жанры из таблицы MySQL.
-    
-    Returns:
-        list: Список уникальных жанров
+    :return: Список уникальных жанров
     """
     try:
         connection = initialize_mysql()
         cursor = connection.cursor()
-        
-        # вывести все категории
         sql = """
         SELECT name AS genre
         FROM category
         """
         cursor.execute(sql)
-        
         results = cursor.fetchall()
         cursor.close()
-        
-        # Извлекаем названия жанров из кортежей
         genres = [row[0] for row in results]
         return genres
-        
     except Exception as e:
         print(f"Ошибка получения жанров: {e}")
         logger.error(f"Ошибка получения жанров: {e}")
         return []
 
-def get_year_range():
+def get_year_range() -> dict:
     """
     Получить минимальный и максимальный год из таблицы фильмов MySQL.
-    
-    Returns:
-        dict: Словарь с 'min_year' и 'max_year'
+    :return: Словарь с 'min_year' и 'max_year'
     """
     try:
         connection = initialize_mysql()
         cursor = connection.cursor()
-        
-        # вывести мин и мах года выпуска фильма
         sql = """
         SELECT MIN(release_year) AS min_year, MAX(release_year) AS max_year
         FROM film
         """
         cursor.execute(sql)
-        
         result = cursor.fetchone()
         cursor.close()
-        
         if result:
             return {
                 'min_year': result[0],
@@ -332,43 +276,37 @@ def get_year_range():
             }
         else:
             return {'min_year': None, 'max_year': None}
-            
     except Exception as e:
         print(f"Ошибка получения диапазона лет: {e}")
         logger.error(f"Ошибка получения диапазона лет: {e}")
         return {'min_year': None, 'max_year': None}
 
-def find_film_by_key(key: str):
+def find_film_by_key(key: str) -> dict | None:
     """
     Найти фильм по ключу (ID или названию) в MySQL.
-    
-    Args:
-        key (str): Ключ фильма для поиска.
-    
-    Returns:
-        dict: Документ фильма если найден, иначе None.
+    :param key: Ключ фильма для поиска.
+    :return: Документ фильма если найден, иначе None.
     """
     try:
         connection = initialize_mysql()
         cursor = connection.cursor(pymysql.cursors.DictCursor)
-        
-        # Сначала пытаемся найти по ID, затем по названию
         sql = "SELECT * FROM films WHERE id = %s OR title = %s LIMIT 1"
         cursor.execute(sql, (key, key))
-        
         result = cursor.fetchone()
         cursor.close()
-        
         return result
-        
     except Exception as e:
         print(f"Ошибка поиска фильма по ключу '{key}': {e}")
         logger.error(f"Ошибка поиска фильма по ключу '{key}': {e}")
         return None
 
-def find_films_by_first_letter(letter, limit=20, skip=0):
+def find_films_by_first_letter(letter: str, limit: int = 20, skip: int = 0) -> list[dict]:
     """
     Найти фильмы, название которых начинается с заданной буквы.
+    :param letter: Первая буква названия
+    :param limit: Максимальное количество результатов
+    :param skip: Количество результатов для пропуска
+    :return: Список фильмов
     """
     try:
         connection = initialize_mysql()

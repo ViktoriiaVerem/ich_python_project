@@ -10,21 +10,23 @@ menu = {
 }
 
 
-def show_menu():
+def show_menu() -> None:
     """
     Выводит главное меню для пользователя.
     Перечисляет все доступные действия.
+    :return: None
     """
     print("\nВыберите действие:")
     for key, value in menu.items():
         print(f"{key}. {value}")
 
 
-def get_menu_choice():
+def get_menu_choice() -> str:
     """
     Запрашивает у пользователя выбор пункта меню.
     Проверяет корректность ввода.
     Возвращает выбранный пункт как строку.
+    :return: str
     """
     while True:
         choice = input("\nВведите номер действия: ").strip()
@@ -33,11 +35,12 @@ def get_menu_choice():
         print("Неверный ввод. Попробуйте снова.")
 
 
-def get_search_keyword():
+def get_search_keyword() -> str:
     """
     Запрашивает у пользователя ключевое слово для поиска фильмов.
     Не допускает пустой ввод.
     Возвращает строку-ключевое слово.
+    :return: str
     """
     keyword = input("Введите ключевое слово для поиска: ").strip()
     if not keyword:
@@ -46,10 +49,11 @@ def get_search_keyword():
     return keyword
 
 
-def get_genre_and_year_range():
+def get_genre_and_year_range() -> dict:
     """
     Запрашивает у пользователя жанр и диапазон годов для поиска фильмов.
     Возвращает словарь с ключами 'genre', 'year_from', 'year_to'.
+    :return: dict
     """
     print("\nПоиск по жанру и диапазону годов:")
     genre = input("Введите жанр (или нажмите Enter для пропуска): ").strip()
@@ -67,10 +71,13 @@ def get_genre_and_year_range():
     }
 
 
-def _parse_year(year_str, label):
+def _parse_year(year_str: str, label: str) -> int | None:
     """
     Преобразует строку в число (год).
     Если ввод некорректен — возвращает None и выводит предупреждение.
+    :param year_str: строка с годом
+    :param label: описание года (начальный/конечный)
+    :return: int или None
     """
     if year_str:
         try:
@@ -80,10 +87,12 @@ def _parse_year(year_str, label):
     return None
 
 
-def display_film(film):
+def display_film(film: dict) -> None:
     """
     Выводит подробную информацию об одном фильме.
     Если фильм не найден — сообщает об этом.
+    :param film: словарь с данными фильма
+    :return: None
     """
     if not film:
         print("Фильм не найден.")
@@ -97,10 +106,12 @@ def display_film(film):
     print("=" * 50)
 
 
-def display_films(films):
+def display_films(films: list[dict]) -> None:
     """
     Выводит список фильмов в виде таблицы.
     Если фильмов нет — сообщает об этом.
+    :param films: список фильмов
+    :return: None
     """
     if not films:
         print("\nФильмы не найдены.")
@@ -129,10 +140,11 @@ def display_films(films):
     print(table)
 
 
-def display_popular_queries():
+def display_popular_queries() -> None:
     """
     Выводит популярные и последние поисковые запросы из MongoDB в виде таблицы.
     Если данных нет — сообщает об этом.
+    :return: None
     """
     from db import get_popular_queries, get_recent_queries
     print("\n" + "=" * 60)
@@ -178,29 +190,32 @@ def display_popular_queries():
     input("\nНажмите Enter для продолжения...")
 
 
-def show_exit_message():
+def show_exit_message() -> None:
     """
     Выводит сообщение о завершении работы приложения.
+    :return: None
     """
     print("\nЗакрытие соединения с базой данных...")
     print("До свидания!")
 
 
-def ask_continue():
+def ask_continue() -> bool:
     """
     Спрашивает пользователя, хочет ли он продолжить просмотр результатов.
     Возвращает True, если пользователь согласен, иначе False.
+    :return: bool
     """
     choice = input("\nПоказать больше результатов? (y/n): ")
 
     return choice in ['y', 'yes', 'да', 'д']
 
 
-def get_first_letter():
+def get_first_letter() -> str:
     """
     Запрашивает у пользователя первую букву для поиска фильмов по названию.
     Проверяет, что введена одна английская буква.
     Возвращает букву в верхнем регистре.
+    :return: str
     """
     while True:
         letter = input("Введите первую букву (A-Z): ").strip().upper()

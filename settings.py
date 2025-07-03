@@ -26,16 +26,18 @@ class Settings:
     SECRET_KEY = os.getenv('SECRET_KEY', 'default-secret-key')
 
     @classmethod
-    def get_mongo_connection_string(cls):
+    def get_mongo_connection_string(cls) -> str:
         """
         Вернуть строку подключения к MongoDB из переменной окружения.
+        :return: str
         """
         return cls.MONGO_URI
 
     @classmethod
-    def get_mysql_config(cls):
+    def get_mysql_config(cls) -> dict:
         """
         Получить конфиг для подключения к MySQL.
+        :return: dict
         """
         return {
             'host': cls.MYSQL_HOST,

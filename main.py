@@ -10,10 +10,11 @@ from db import (
 from settings import settings
 
 
-def main():
+def main() -> None:
     """
     Основной цикл приложения.
     Управляет меню, обработкой пользовательского ввода и вызовом функций поиска.
+    :return: None
     """
     while True:
         show_menu()

@@ -1,8 +1,4 @@
-# Для работы с MySQL
-pymysql
-
-# Для работы с MongoDB
-pymongo
-
-#Для загрузки из файла .env в окружение os.getenv('MONGO_HOST'
-python-dotenv
+pymysql==1.1.0
+pymongo==4.7.2
+python-dotenv==1.0.1
+prettytable==3.10.0
